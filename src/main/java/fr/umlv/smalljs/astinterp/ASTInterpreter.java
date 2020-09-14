@@ -40,17 +40,20 @@ public class ASTInterpreter {
     private static final Visitor<JSObject, Object> VISITOR =
             new Visitor<JSObject, Object>()
                     .when(Block.class, (block, env) -> {
-                        throw new UnsupportedOperationException("TODO Block");
+                        block.instrs().forEach(expr -> visit(expr, env));
+                        return UNDEFINED;
                     })
                     .when(Literal.class, (literal, env) -> {
-                        throw new UnsupportedOperationException("TODO Literal");
+                        return literal;
                     })
-                    
                     .when(FunCall.class, (funCall, env) -> {
-                        throw new UnsupportedOperationException("TODO FunCall");
+                        var funcName = visit(funCall.qualifier(), env);
+                        var fn = as(funcName, JSObject.class, funCall);
+                        return fn.invoke(null,
+                            funCall.args().stream().map(expr -> visit(expr, env)).toArray());
                     })
                     .when(LocalVarAccess.class, (localVarAccess, env) -> {
-                        throw new UnsupportedOperationException("TODO LocalVarAccess");
+                        return env.lookup(localVarAccess.name());
                     })
                     .when(LocalVarAssignment.class, (localVarAssignment, env) -> {
                         throw new UnsupportedOperationException("TODO LocalVarAssignment");
