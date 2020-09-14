@@ -47,8 +47,7 @@ public class ASTInterpreterTests {
   public void printPrint() {
     assertFalse(execute("print(print)\n").isEmpty());
   }
-  /*
-  
+
   @Tag("Q6") @Test
   public void printOperations() {
     assertEquals("5\n", execute("print(3 + 2)\n"));
@@ -56,7 +55,7 @@ public class ASTInterpreterTests {
     assertEquals("6\n", execute("print(3 * 2)\n"));
     assertEquals("1\n", execute("print(3 / 2)\n"));
   }
-  
+
   @Tag("Q7") @Test
   public void printPrint3() {
     assertEquals("3\nundefined\n", execute("print(print(3))\n"));
@@ -384,5 +383,7 @@ public class ASTInterpreterTests {
                 object.foo(42);
                 object.foo(42);
                 """));
-  }*/
+  }
+
+  /**/
 }

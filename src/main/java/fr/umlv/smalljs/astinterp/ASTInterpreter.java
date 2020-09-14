@@ -44,40 +44,85 @@ public class ASTInterpreter {
                         return UNDEFINED;
                     })
                     .when(Literal.class, (literal, env) -> {
-                        return literal;
+                        return literal.value();
                     })
                     .when(FunCall.class, (funCall, env) -> {
                         var funcName = visit(funCall.qualifier(), env);
                         var fn = as(funcName, JSObject.class, funCall);
-                        return fn.invoke(null,
+                        return fn.invoke(UNDEFINED,
                             funCall.args().stream().map(expr -> visit(expr, env)).toArray());
                     })
                     .when(LocalVarAccess.class, (localVarAccess, env) -> {
                         return env.lookup(localVarAccess.name());
                     })
                     .when(LocalVarAssignment.class, (localVarAssignment, env) -> {
-                        throw new UnsupportedOperationException("TODO LocalVarAssignment");
-                    }) 
+                        var name = localVarAssignment.name();
+                        var value = visit(localVarAssignment.expr(), env);
+                        var exist = env.lookup(name) != UNDEFINED;
+                        /*if(localVarAssignment.declaration() && exist) {
+                            throw new Failure("Variable already exist");
+                        }*/
+                        if(!localVarAssignment.declaration() && !exist) {
+                            throw new Failure("Variable doesn't exist");
+                        }
+                        env.register(name, value);
+                        return UNDEFINED;
+                    })
                     .when(Fun.class, (fun, env) -> {
-                        throw new UnsupportedOperationException("TODO Fun");
+                        var hasName = fun.name().isPresent();
+                        var name = hasName ? fun.name().get() : "lambda";
+
+                        var fn = JSObject.newFunction(name, (self, receiver, args) -> {
+                            if(args.length != fun.parameters().size()) {
+                                throw new Failure("Not same amount of arguments at line " + fun.lineNumber());
+                            }
+
+                            var inEnv = JSObject.newEnv(env);
+                            inEnv.register("this", receiver);
+                            for(var i = 0; i < args.length; ++i) {
+                                inEnv.register(fun.parameters().get(i), args[i]);
+                            }
+                            try {
+                                return visit(fun.body(), inEnv);
+                            } catch (ReturnError ret) {
+                                return ret.getValue();
+                            }
+                        });
+                        if(hasName) {
+                            env.register(name, fn);
+                        }
+                        return fn;
                     })
                     .when(Return.class, (_return, env) -> {
-                        throw new UnsupportedOperationException("TODO Return");
+                        throw new ReturnError(visit(_return.expr(), env));
                     })
                     .when(If.class, (_if, env) -> {
-                        throw new UnsupportedOperationException("TODO If");
+                        int cond = as(visit(_if.condition(), env), Integer.class, _if);
+                        var block = cond != 0 ? _if.trueBlock() : _if.falseBlock();
+                        visit(block, env);
+                        return UNDEFINED;
                     })
                     .when(New.class, (_new, env) -> {
-                        throw new UnsupportedOperationException("TODO New");
+                        var obj = JSObject.newObject(null);
+                        _new.initMap().forEach((s, expr) -> obj.register(s, visit(expr, env)));
+                        return obj;
                     })
                     .when(FieldAccess.class, (fieldAccess, env) -> {
-                        throw new UnsupportedOperationException("TODO FieldAccess");
+                        var parent = visit(fieldAccess.receiver(), env);
+                        var p = as(parent, JSObject.class, fieldAccess);
+                        return p.lookup(fieldAccess.name());
                     })
                     .when(FieldAssignment.class, (fieldAssignment, env) -> {
-                        throw new UnsupportedOperationException("TODO FieldAssignment");
+                        var parent = visit(fieldAssignment.receiver(), env);
+                        var p = as(parent, JSObject.class, fieldAssignment);
+                        p.register(fieldAssignment.name(), visit(fieldAssignment.expr(), env));
+                        return UNDEFINED;
                     })
                     .when(MethodCall.class, (methodCall, env) -> {
-                        throw new UnsupportedOperationException("TODO MethodCall");
+                        var parent = as(visit(methodCall.receiver(), env), JSObject.class, methodCall);
+                        var fn = as(parent.lookup(methodCall.name()), JSObject.class, methodCall);
+                        return fn.invoke(parent,
+                            methodCall.args().stream().map(expr -> visit(expr, env)).toArray());
                     })
             ;
 
