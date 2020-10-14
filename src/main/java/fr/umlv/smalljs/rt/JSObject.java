@@ -8,6 +8,7 @@ import java.lang.invoke.MethodType;
 import java.lang.invoke.SwitchPoint;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 

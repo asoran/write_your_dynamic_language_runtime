@@ -108,9 +108,8 @@ public class ASTInterpreter {
                         return obj;
                     })
                     .when(FieldAccess.class, (fieldAccess, env) -> {
-                        var parent = visit(fieldAccess.receiver(), env);
-                        var p = as(parent, JSObject.class, fieldAccess);
-                        return p.lookup(fieldAccess.name());
+                        var parent = as(visit(fieldAccess.receiver(), env), JSObject.class, fieldAccess);
+                        return parent.lookup(fieldAccess.name());
                     })
                     .when(FieldAssignment.class, (fieldAssignment, env) -> {
                         var parent = visit(fieldAssignment.receiver(), env);
